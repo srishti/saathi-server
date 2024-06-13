@@ -1,4 +1,10 @@
+# system
+.DS_Store
+
+# npm
 node_modules
+
+# app
 .env
 *.credentials.json
-.DS_Store
+public/audio
