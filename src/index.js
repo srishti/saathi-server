@@ -85,6 +85,10 @@ const saveAudioFile = async (audioContent) => {
 const getAudioFileUrl = ({ protocol, host, fileName }) =>
     `${protocol}://${host}/audio/${fileName}`;
 
+app.get('/healthcheck', async (req, res) => {
+    res.status(200).send("Ok");
+});
+
 /**
  * POST endpoint to translate text to the specified language and convert it to speech
  */
@@ -118,7 +122,8 @@ app.post('/tts', async (req, res) => {
     }
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
+console.log(`Server will run on port ${PORT}`);
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
