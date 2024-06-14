@@ -8,6 +8,7 @@ const cors = require('cors');
 require('dotenv').config();
 
 const Constants = require('./constants');
+const ImageToAudioController = require('./ImageToAudio/index.js');
 
 const app = express();
 
@@ -86,8 +87,41 @@ const getAudioFileUrl = ({ protocol, host, fileName }) =>
     `${protocol}://${host}/audio/${fileName}`;
 
 app.get('/healthcheck', async (req, res) => {
-    res.status(200).send("Ok");
+    res.status(200).send('Ok');
 });
+
+/**
+ * Function to convert text to audio
+ * @param {*} params
+ * @returns Promise
+ */
+const textToAudio = (params) => {
+    return new Promise(async (resolve, reject) => {
+        const { text, languageCode } = params;
+
+        try {
+            // translate original text to given language
+            const translation = await translateText({ text, languageCode });
+
+            // convert translated text to speech
+            const audioResponse = await convertTextToSpeech({
+                translation,
+                languageCode,
+            });
+
+            // save audio file locally on the server
+            const fileName = await saveAudioFile(audioResponse.audioContent);
+
+            // send URL of the audio file in the response
+            resolve({
+                fileName,
+            });
+        } catch (error) {
+            console.error(`${Constants.ERROR.API_ERROR}: `, error);
+            reject(error);
+        }
+    });
+};
 
 /**
  * POST endpoint to translate text to the specified language and convert it to speech
@@ -114,6 +148,34 @@ app.post('/tts', async (req, res) => {
                 protocol: req.protocol,
                 host: req.get('host'),
                 fileName,
+            }),
+        });
+    } catch (error) {
+        console.error(`${Constants.ERROR.API_ERROR}: `, error);
+        res.status(500).send(error);
+    }
+});
+
+/**
+ * POST endpoint to translate image to the specified language and convert it to speech
+ */
+app.post('/img-to-text', async (req, res) => {
+    const { language, image, systemInstruction } = req.body;
+
+    try {
+        const result = await ImageToAudioController.imageToText({
+            language,
+            image,
+            textToAudio,
+            systemInstruction,
+        });
+
+        // send URL of the audio file in the response
+        res.status(200).send({
+            url: getAudioFileUrl({
+                protocol: req.protocol,
+                host: req.get('host'),
+                fileName: result.fileName,
             }),
         });
     } catch (error) {
